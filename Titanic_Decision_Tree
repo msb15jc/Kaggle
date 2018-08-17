@@ -1,0 +1,104 @@
+# Imports needed for the script
+import numpy as np
+import pandas as pd
+pd.set_option('display.max_columns', 300)
+import re
+import xgboost as xgb
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+import plotly.offline as py
+py.init_notebook_mode(connected=True)
+import plotly.graph_objs as go
+import plotly.tools as tls
+from sklearn import tree
+from sklearn.metrics import accuracy_score
+from sklearn.model_selection import KFold
+from sklearn.model_selection import cross_val_score
+##from IPython.display import Image as PImage
+from subprocess import check_call
+from PIL import Image, ImageDraw, ImageFont
+
+
+
+##load data
+train = pd.read_csv( r'C:\Users\upsmart\Desktop\train.csv')
+test = pd.read_csv(r'C:\Users\upsmart\Desktop\test.csv')
+
+train.head()   ##investigate the first 5 rows of train dataset
+
+
+
+##stack train&test data together, it becomes a list(not a DataFrame)
+full_data = [train, test]
+
+
+
+## in python np.NaN is assumed as float type, believe it nor not, try type(np.NaN)s
+## Changes in the unconcated data will reflect on the concated data,in full_data
+## it also shows a column named 'Has_Cabin'
+train['Has_Cabin'] = train['Cabin'].apply(lambda x: 0 if type(x) == float else 1)
+test['Has_Cabin'] = test['Cabin'].apply(lambda x: 0 if type(x) == float else 1)
+
+
+
+## In order to proceed the individual row calculation, have to use a loop
+## Firstly, has to determine whether these is SibSp or Parch is below 0 peole
+## use train['SibSp'].min() & train['SibSp'].max()
+for dataset in full_data:
+    dataset['Family_Size'] = dataset['SibSp'] + dataset['Parch'] + 1
+
+
+
+for dataset in full_data:
+    dataset['Is_Alone'] = dataset['Family_Size'].apply(lambda x: 1 if  x == 1 else 0)
+
+
+    
+train['Embarked'].value_counts()     ##shows the frequency of each Embarked port
+
+
+
+
+## loc(data, index = 会index, column = column) 在取某一行数的时候跳过NaN值！！
+## try train.loc[10, 'Age'], actually gives the 11th passenger's age.
+
+## train.loc[train['Age'].isnull(), 'Age']   ##gives the row indexs that Age is NaN
+
+
+np.random.seed(3)    ##复现np.random的结果
+for dataset in full_data:             ## 此处dataset代表full_data中两个pd，train & test
+    Age_Arg = dataset['Age'].mean()   
+    Age_std = dataset['Age'].std()
+    Age_is_Null = dataset['Age'].isnull().sum()
+    Age_is_Null_CI = np.random.randint(Age_Arg - Age_std, Age_Arg + Age_std, size = Age_is_Null)
+    dataset.loc[np.isnan(dataset['Age']), 'Age'] = Age_is_Null_CI
+    dataset['Age'] = dataset['Age'].astype(int)
+
+
+
+## 此段仅针对train dataframe进行了更改，未同时更改test dataframe，故应使用for loop修改全量数据
+##train.insert(3, 'Title', train['Name'])  ## 先复制原来的列， position从0列开始 
+##train['Title'] = train['Title'].map(lambda x: x.split(',')[1]) ## 按照逗号分列，取第二列
+##train['Title'] = train['Title'].map(lambda x: x.split(' ')[1]) ## 按照空格分列，取第二列（此列第一个字符为空格）
+##train['Title'].value_counts()  ##查看各种title的个数分布
+
+for dataset in full_data:
+    dataset.insert(3, 'Title', train['Name'])  ## 先复制原来的列， position从0列开始 
+    dataset['Title'] = dataset['Title'].map(lambda x: x.split(',')[1]) ## 按照逗号分列，取第二列
+    dataset['Title'] = dataset['Title'].map(lambda x: x.split(' ')[1]) 
+    dataset['Title'] = dataset['Title'].replace(['Dr.','Rev.','Mlle.','Major.','Col.','Ms.','Jonkheer.','Capt.','Mme.',
+                                                  'Sir.','Lady.','Don.','the'], 'Rare')
+
+## 判断一个对象是否iterable
+##from collections import Iterable
+##isinstance(train, Iterable)
+   
+
+## Mappings
+
+for dataset in full_data:
+    dataset['Sex'] = dataset['Sex'].map(lambda x:1 if x == 'male' else 0).astype(int)
+
+
+## To be Continued
