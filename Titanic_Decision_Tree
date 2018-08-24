@@ -145,5 +145,22 @@ drop_elements = ['PassengerId', 'Name', 'SibSp', 'Parch', 'Cabin']
 train = train.drop(drop_elements, axis = 1)
 test = test.drop(drop_elements, axis = 1)
 
+##seaborn pairplot: http://seaborn.pydata.org/generated/seaborn.pairplot.html
+g = sns.pairplot(train[[u'Survived', u'Pclass', u'Sex', u'Age', u'Family_Size'
+                        , u'Fare', u'Embarked', u'Title', 
+                        u'Has_Cabin', u'Ticket', u'Is_Alone']], hue='Survived', 
+                        palette = 'seismic', size=1.2, diag_kind = 'kde',
+                        diag_kws=dict(shade=True), plot_kws=dict(s=13) )  ##若data有重复数据，报错ValueError: x and y must be the same size
+g.set(xticklabels=[])
+
+
+##Person's correlation
+colormap = plt.cm.viridis
+plt.figure(figsize=(12,12))
+plt.title('Pearson Correlation of Features', y=1.05, size=15)
+sns.heatmap(train.astype(float).corr(),linewidths=0.1,vmax=1.0, square=True, cmap=colormap, 
+            linecolor='white', annot=True)
+
+
 
 ## To be continued
